@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GD5GD</title>
+    <style>
+        /* Light Mode Variables (Default) */
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --panel-bg: #ffffff;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border-radius: 12px;
+            --border-color: #d1d5db;
+            --input-bg: #ffffff;
+            --upload-bg: #f8fafc;
+            --upload-border: #cbd5e1;
+            --upload-hover: #eef2ff;
+            --thumb-bg: #e5e7eb;
+            --thumb-border: transparent;
+            --toggle-bg: #f9fafb;
+            --canvas-bg: #f3f4f6;
+        }
+
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --bg: #111827;
+            --panel-bg: #1f2937;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --input-bg: #374151;
+            --upload-bg: #111827;
+            --upload-border: #4b5563;
+            --upload-hover: #374151;
+            --thumb-bg: #374151;
+            --thumb-border: #4b5563;
+            --toggle-bg: #111827;
+            --canvas-bg: #111827;
+        }
+
+        /* Smooth Theme Transitions */
+        body, .controls, .preview-area, .upload-box, select, input, .toggle-row, header h1, header p, button {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* Header & Top Bar Layout */
+        .header-container { position: relative; width: 100%; max-width: 1200px; text-align: center; margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        header { margin: 0; }
+        header h1 { margin: 0 0 5px 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: var(--text); }
+        header p { margin: 0; color: var(--text-muted); font-size: 15px; }
+
+        .top-bar { position: absolute; right: 0; top: 0; display: flex; gap: 10px; align-items: center; }
+        .top-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; outline: none; }
+        .top-btn:hover { border-color: var(--primary); }
+        
+        @media (max-width: 768px) { 
+            .header-container { margin-bottom: 20px; }
+            .top-bar { position: relative; right: auto; top: auto; justify-content: center; margin-top: 15px; } 
+        }
+
+        .container { display: flex; flex-direction: row; gap: 20px; max-width: 1200px; width: 100%; align-items: flex-start; }
+        @media (max-width: 850px) { .container { flex-direction: column; } }
+
+        /* 左邊控制面板 */
+        .controls { flex: 1; background: var(--panel-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 18px; min-width: 320px; }
+        .section-title { font-weight: 600; font-size: 16px; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 5px; color: var(--text); }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+        select, input[type="range"] { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background-color: var(--input-bg); color: var(--text); outline: none; }
+        select:focus { border-color: var(--primary); }
+        
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--toggle-bg); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .toggle-row label { cursor: pointer; user-select: none; margin: 0; color: var(--text); }
+        .toggle-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+
+        /* 上載與拖拉排序區 */
+        .upload-box { border: 2px dashed var(--upload-border); padding: 24px 20px; text-align: center; border-radius: 10px; cursor: pointer; background: var(--upload-bg); }
+        .upload-box:hover { border-color: var(--primary); background: var(--upload-hover); }
+        .upload-icon { font-size: 28px; margin-bottom: 8px; display: inline-block; }
+        .thumb-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+        .thumb-item { position: relative; aspect-ratio: 1; border: 2px solid var(--thumb-border); border-radius: 8px; overflow: hidden; cursor: grab; background: var(--thumb-bg); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .thumb-item:active { cursor: grabbing; }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .thumb-item .del-btn { position: absolute; top: 4px; right: 4px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .thumb-item .del-btn:hover { background: rgba(220,38,38,1); }
+        .thumb-item.dragging { opacity: 0.4; border: 2px dashed var(--primary); transform: scale(0.95); }
+
+        /* 輸出按鈕 */
+        .btn-stack { display: flex; gap: 12px; margin-top: 10px; }
+        button.action-btn { flex: 1; padding: 12px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button.btn-primary { background: var(--primary); color: white; }
+        button.btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
+        button.btn-secondary { background: #10b981; color: white; }
+        button.btn-secondary:hover:not(:disabled) { background: #059669; transform: translateY(-1px); }
+        button:disabled { background: var(--border-color) !important; color: var(--text-muted) !important; cursor: not-allowed; transform: none; }
+
+        /* 右邊即時預覽區 */
+        .preview-area { flex: 1.8; background: var(--panel-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 500px; width: 100%; position: relative; }
+        .preview-container { max-width: 100%; max-height: 75vh; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; background: var(--canvas-bg); display: flex; align-items: center; justify-content: center; }
+        canvas { max-width: 100%; max-height: 75vh; object-fit: contain; display: block; }
+        .empty-placeholder { color: var(--text-muted); text-align: center; font-size: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .empty-placeholder span.icon { font-size: 40px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <header>
+            <h1 data-i18n="title">GD5GD</h1>
+            <p data-i18n="subhead">Combine your photos into one seamlessly</p>
+        </header>
+        
+        <div class="top-bar">
+            <select id="lang-select" class="top-btn" onchange="changeLang()">
+                <option value="en">English</option>
+                <option value="zh-hk">繁體中文</option>
+                <option value="zh-cn">简体中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+            </select>
+            <button id="theme-toggle" class="top-btn" onclick="toggleTheme()">
+                <span data-i18n="theme_dark">🌙 Dark</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 左邊控制面板 -->
+        <div class="controls">
+            
+            <!-- 1. 上載區 -->
+            <div class="section-title" data-i18n="step1">1. Upload Photos (2-9)</div>
+            <div class="upload-box" onclick="document.getElementById('file-input').click()">
+                <span class="upload-icon">📁</span>
+                <p style="margin: 0; font-size: 14px; font-weight: 500;" data-i18n="upload_text">Click here or drag photos into this area</p>
+                <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+            </div>
+            <div class="thumb-grid" id="thumb-grid"></div>
+
+            <!-- 2. 排版與邊框 -->
+            <div class="section-title" data-i18n="step2">2. Grid & Border Settings</div>
+            
+            <div class="control-group">
+                <label data-i18n="layout">Grid Layout</label>
+                <select id="grid-select" onchange="updateCanvas()">
+                    <option value="auto" data-i18n="l_auto">🤖 Auto Optimize</option>
+                    <option value="1x2" data-i18n="l_1x2">1x2 (Side-by-side)</option>
+                    <option value="2x1" data-i18n="l_2x1">2x1 (Stacked)</option>
+                    <option value="1x3" data-i18n="l_1x3">1x3 (Horizontal)</option>
+                    <option value="3x1" data-i18n="l_3x1">3x1 (Vertical)</option>
+                    <option value="2x2" data-i18n="l_2x2">2x2 (Grid)</option>
+                    <option value="2x3" data-i18n="l_2x3">2x3 (Grid)</option>
+                    <option value="3x2" data-i18n="l_3x2">3x2 (Grid)</option>
+                    <option value="3x3" data-i18n="l_3x3">3x3 (Grid)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label><span data-i18n="ratio_label">Aspect Ratio: </span> <span id="ratio-val">1:1 (Square)</span></label>
+                <input type="range" id="ratio-slider" min="0" max="8" value="4" oninput="updateRatioLabel(); updateCanvas()">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding: 0 4px; user-select: none;">
+                    <span data-i18n="r_wide_lbl">21:9 (Wide)</span>
+                    <span data-i18n="r_sq_lbl">1:1</span>
+                    <span data-i18n="r_long_lbl">9:21 (Long)</span>
+                </div>
+            </div>
+
+            <div class="toggle-row">
+                <label for="fit-select" data-i18n="fit">Photo Fit Mode</label>
+                <select id="fit-select" onchange="updateCanvas()" style="width: 55%; padding: 6px; font-size: 13px;">
+                    <option value="cover" data-i18n="fit_cov">✂️ Cover</option>
+                    <option value="contain" data-i18n="fit_con">🖼️ Contain</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="border_c">Border Color</label>
+                <select id="border-color" onchange="updateCanvas()">
+                    <option value="#ffffff" data-i18n="c_white">⚪ White</option>
+                    <option value="#000000" data-i18n="c_black">⚫ Black</option>
+                    <option value="#f3f4f6" data-i18n="c_lgray">🔘 Light Gray</option>
+                    <option value="#374151" data-i18n="c_dgray">🔘 Dark Gray</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label><span data-i18n="border_t">Border Thickness: </span> <span id="thickness-val">0</span>px</label>
+                <input type="range" id="border-thickness" min="0" max="60" value="0" oninput="document.getElementById('thickness-val').innerText=this.value; updateCanvas()">
+            </div>
+
+            <div class="toggle-row">
+                <label for="outer-border-toggle" data-i18n="outer_b">Include outer border?</label>
+                <input type="checkbox" id="outer-border-toggle" onchange="updateCanvas()">
+            </div>
+
+            <!-- 3. 角落號碼 -->
+            <div class="section-title" data-i18n="step3">3. Corner Numbers</div>
+            <div class="toggle-row">
+                <label for="number-toggle" data-i18n="show_n">Show Numbers (1, 2, 3...)</label>
+                <input type="checkbox" id="number-toggle" onchange="updateCanvas()">
+            </div>
+            
+            <div id="number-settings" style="display: none; flex-direction: column; gap: 10px;">
+                <div class="control-group">
+                    <label data-i18n="n_style">Number Style</label>
+                    <select id="number-style" onchange="updateCanvas()">
+                        <option value="black" data-i18n="s_black">⚫ Black (White Outline)</option>
+                        <option value="white" data-i18n="s_white">⚪ White (Black Outline)</option>
+                        <option value="highlight" data-i18n="s_high">🌟 Highlight (Black BG)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label data-i18n="n_pos">Number Position</label>
+                    <select id="number-pos" onchange="updateCanvas()">
+                        <option value="tl" data-i18n="p_tl">↖️ Top-Left</option>
+                        <option value="tr" data-i18n="p_tr">↗️ Top-Right</option>
+                        <option value="bl" data-i18n="p_bl">↙️ Bottom-Left</option>
+                        <option value="br" data-i18n="p_br">↘️ Bottom-Right</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 4. 輸出 -->
+            <div class="section-title" data-i18n="step4">4. Output</div>
+            <div class="btn-stack">
+                <button class="action-btn btn-primary" id="download-btn" disabled onclick="downloadImage()">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span data-i18n="btn_dl">Download Image</span>
+                </button>
+                <button class="action-btn btn-secondary" id="copy-btn" disabled onclick="copyToClipboard()">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <span data-i18n="btn_cp">Copy Image</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 右邊即時預覽區 -->
+        <div class="preview-area">
+            <div class="preview-container" id="preview-container">
+                <div class="empty-placeholder" id="placeholder-text">
+                    <span class="icon">🖼️</span>
+                    <span data-i18n="prev_emp">No photos. Upload on the left to preview.</span>
+                </div>
+                <canvas id="main-canvas" style="display: none;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- i18n Translation Dictionary ---
+        const i18n = {
+            'en': {
+                title: 'GD5GD', subhead: 'Combine your photos into one seamlessly',
+                step1: '1. Upload Photos (2-9)', upload_text: 'Click here or drag photos into this area',
+                step2: '2. Grid & Border Settings', layout: 'Grid Layout',
+                l_auto: '🤖 Auto Optimize', l_1x2: '1x2 (Side-by-side)', l_2x1: '2x1 (Stacked)', l_1x3: '1x3 (Horizontal)', l_3x1: '3x1 (Vertical)', l_2x2: '2x2 (Grid)', l_2x3: '2x3 (Grid)', l_3x2: '3x2 (Grid)', l_3x3: '3x3 (Grid)',
+                ratio_label: 'Aspect Ratio: ', r_wide_lbl: '21:9 (Wide)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (Long)',
+                ratio_21_9: '21:9 (Ultrawide)', ratio_16_9: '16:9 (Landscape)', ratio_3_2: '3:2 (Classic)', ratio_4_3: '4:3 (Standard)', ratio_1_1: '1:1 (Square)', ratio_3_4: '3:4 (Portrait)', ratio_2_3: '2:3 (Classic)', ratio_9_16: '9:16 (Story)', ratio_9_21: '9:21 (Tall)',
+                fit: 'Photo Fit Mode', fit_cov: '✂️ Cover', fit_con: '🖼️ Contain',
+                border_c: 'Border Color', c_white: '⚪ White', c_black: '⚫ Black', c_lgray: '🔘 Light Gray', c_dgray: '🔘 Dark Gray', border_t: 'Border Thickness: ', outer_b: 'Include outer border?',
+                step3: '3. Corner Numbers', show_n: 'Show Numbers (1, 2, 3...)', n_style: 'Number Style', s_black: '⚫ Black (White Outline)', s_white: '⚪ White (Black Outline)', s_high: '🌟 Highlight (Black BG)',
+                n_pos: 'Number Position', p_tl: '↖️ Top-Left', p_tr: '↗️ Top-Right', p_bl: '↙️ Bottom-Left', p_br: '↘️ Bottom-Right',
+                step4: '4. Output', btn_dl: 'Download Image', btn_cp: 'Copy Image', prev_emp: 'No photos. Upload on the left to preview.',
+                alert_max: 'You can only upload up to 9 photos!', copied: '✅ Copied!', copy_fail: 'Cannot copy directly. Please use download.',
+                theme_dark: '🌙 Dark', theme_light: '☀️ Light'
+            },
+            'zh-hk': {
+                title: 'GD5GD', subhead: '將你嘅相片完美無縫合併',
+                step1: '1. 放低相片 (2-9張)', upload_text: '撳呢度 或者 直接將相拖入嚟',
+                step2: '2. 拼圖與邊框設定', layout: '網格排列',
+                l_auto: '🤖 自動最優化排列', l_1x2: '左右 2 張 (1x2)', l_2x1: '上下 2 張 (2x1)', l_1x3: '橫排 3 張 (1x3)', l_3x1: '直排 3 張 (3x1)', l_2x2: '田字 4 張 (2x2)', l_2x3: '2列x3行 (6張)', l_3x2: '3列x2行 (6張)', l_3x3: '九宮格 (3x3)',
+                ratio_label: '格仔比例: ', r_wide_lbl: '21:9 (闊)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (長)',
+                ratio_21_9: '21:9 (電影闊屏)', ratio_16_9: '16:9 (橫向屏幕)', ratio_3_2: '3:2 (相機比例)', ratio_4_3: '4:3 (傳統橫相)', ratio_1_1: '1:1 (正方)', ratio_3_4: '3:4 (傳統直相)', ratio_2_3: '2:3 (直相)', ratio_9_16: '9:16 (手機直屏)', ratio_9_21: '9:21 (長條)',
+                fit: '相片比例模式', fit_cov: '✂️ 填滿 (Cover)', fit_con: '🖼️ 留白 (Contain)',
+                border_c: '邊框顏色', c_white: '⚪ 白色', c_black: '⚫ 黑色', c_lgray: '🔘 淺灰', c_dgray: '🔘 深灰', border_t: '邊框粗細: ', outer_b: '需要最外圈邊框？',
+                step3: '3. 角落數字設定', show_n: '顯示相片號碼 (1, 2, 3...)', n_style: '號碼款式', s_black: '⚫ 黑字 (帶白邊)', s_white: '⚪ 白字 (帶黑邊)', s_high: '🌟 反白高亮 (黑底白字)',
+                n_pos: '號碼位置', p_tl: '↖️ 左上角', p_tr: '↗️ 右上角', p_bl: '↙️ 左下角', p_br: '↘️ 右下角',
+                step4: '4. 搞定輸出', btn_dl: '下載相片', btn_cp: '複製圖片', prev_emp: '未有相片，請喺左邊上載相片預覽',
+                alert_max: '最多只可以擺 9 張相咋！', copied: '✅ 複製成功！', copy_fail: '無法直接複製，請使用「下載相片」按鈕儲存。',
+                theme_dark: '🌙 黑色模式', theme_light: '☀️ 白色模式'
+            },
+            'zh-cn': {
+                title: 'GD5GD', subhead: '将你的照片无缝合并',
+                step1: '1. 放入照片 (2-9张)', upload_text: '点击这里 或 直接将照片拖入',
+                step2: '2. 拼图与边框设置', layout: '网格排列',
+                l_auto: '🤖 自动最优化排列', l_1x2: '左右 2 张 (1x2)', l_2x1: '上下 2 张 (2x1)', l_1x3: '横排 3 张 (1x3)', l_3x1: '直排 3 张 (3x1)', l_2x2: '田字 4 张 (2x2)', l_2x3: '2列x3行 (6张)', l_3x2: '3列x2行 (6张)', l_3x3: '九宫格 (3x3)',
+                ratio_label: '格子比例: ', r_wide_lbl: '21:9 (宽)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (长)',
+                ratio_21_9: '21:9 (电影宽屏)', ratio_16_9: '16:9 (横向屏幕)', ratio_3_2: '3:2 (相机比例)', ratio_4_3: '4:3 (传统横拍)', ratio_1_1: '1:1 (正方)', ratio_3_4: '3:4 (传统竖拍)', ratio_2_3: '2:3 (竖拍)', ratio_9_16: '9:16 (手机竖屏)', ratio_9_21: '9:21 (长条)',
+                fit: '照片比例模式', fit_cov: '✂️ 填满 (Cover)', fit_con: '🖼️ 留白 (Contain)',
+                border_c: '边框颜色', c_white: '⚪ 白色', c_black: '⚫ 黑色', c_lgray: '🔘 浅灰', c_dgray: '🔘 深灰', border_t: '边框粗细: ', outer_b: '需要最外圈边框？',
+                step3: '3. 角落数字设置', show_n: '显示照片编号 (1, 2, 3...)', n_style: '号码款式', s_black: '⚫ 黑字 (带白边)', s_white: '⚪ 白字 (带黑边)', s_high: '🌟 反白高亮 (黑底白字)',
+                n_pos: '号码位置', p_tl: '↖️ 左上角', p_tr: '↗️ 右上角', p_bl: '↙️ 左下角', p_br: '↘️ 右下角',
+                step4: '4. 完成输出', btn_dl: '下载照片', btn_cp: '复制图片', prev_emp: '没有照片，请在左侧上传预览',
+                alert_max: '最多只能放 9 张照片！', copied: '✅ 复制成功！', copy_fail: '无法直接复制，请使用“下载照片”按钮保存。',
+                theme_dark: '🌙 暗色模式', theme_light: '☀️ 亮色模式'
+            },
+            'ja': {
+                title: 'GD5GD', subhead: '写真をシームレスに1枚にまとめる',
+                step1: '1. 写真をアップロード (2-9枚)', upload_text: 'ここをクリックするか、写真をドラッグ＆ドロップ',
+                step2: '2. グリッドと枠線の設定', layout: 'グリッドレイアウト',
+                l_auto: '🤖 自動最適化', l_1x2: '左右 2枚 (1x2)', l_2x1: '上下 2枚 (2x1)', l_1x3: '横 3枚 (1x3)', l_3x1: '縦 3枚 (3x1)', l_2x2: '田字 4枚 (2x2)', l_2x3: '2列x3行 (6枚)', l_3x2: '3列x2行 (6枚)', l_3x3: '9分割 (3x3)',
+                ratio_label: 'アスペクト比: ', r_wide_lbl: '21:9 (広)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (長)',
+                ratio_21_9: '21:9 (ウルトラワイド)', ratio_16_9: '16:9 (ワイド)', ratio_3_2: '3:2 (クラシック)', ratio_4_3: '4:3 (スタンダード)', ratio_1_1: '1:1 (スクエア)', ratio_3_4: '3:4 (ポートレート)', ratio_2_3: '2:3 (クラシック縦)', ratio_9_16: '9:16 (ストーリー)', ratio_9_21: '9:21 (縦長)',
+                fit: 'フィットモード', fit_cov: '✂️ カバー', fit_con: '🖼️ コンテイン',
+                border_c: '枠線の色', c_white: '⚪ 白', c_black: '⚫ 黒', c_lgray: '🔘 ライトグレー', c_dgray: '🔘 ダークグレー', border_t: '枠線の太さ: ', outer_b: '外側の枠線を含める？',
+                step3: '3. コーナー番号の設定', show_n: '番号を表示 (1, 2, 3...)', n_style: '番号のスタイル', s_black: '⚫ 黒 (白フチ)', s_white: '⚪ 白 (黒フチ)', s_high: '🌟 ハイライト (黒背景白文字)',
+                n_pos: '番号の位置', p_tl: '↖️ 左上', p_tr: '↗️ 右上', p_bl: '↙️ 左下', p_br: '↘️ 右下',
+                step4: '4. 出力', btn_dl: '画像をダウンロード', btn_cp: '画像をコピー', prev_emp: '写真がありません。左側でアップロードしてください。',
+                alert_max: '写真は最大9枚までです！', copied: '✅ コピーしました！', copy_fail: 'コピーできませんでした。ダウンロードをご利用ください。',
+                theme_dark: '🌙 ダーク', theme_light: '☀️ ライト'
+            },
+            'ko': {
+                title: 'GD5GD', subhead: '사진을 매끄럽게 하나로 합치세요',
+                step1: '1. 사진 업로드 (2-9장)', upload_text: '여기를 클릭하거나 사진을 드래그하세요',
+                step2: '2. 그리드 및 테두리 설정', layout: '그리드 레이아웃',
+                l_auto: '🤖 자동 최적화', l_1x2: '가로 2장 (1x2)', l_2x1: '세로 2장 (2x1)', l_1x3: '가로 3장 (1x3)', l_3x1: '세로 3장 (3x1)', l_2x2: '바둑판 4장 (2x2)', l_2x3: '2열x3행 (6장)', l_3x2: '3열x2행 (6장)', l_3x3: '9분할 (3x3)',
+                ratio_label: '비율: ', r_wide_lbl: '21:9 (넓게)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (길게)',
+                ratio_21_9: '21:9 (울트라와이드)', ratio_16_9: '16:9 (가로)', ratio_3_2: '3:2 (클래식)', ratio_4_3: '4:3 (표준)', ratio_1_1: '1:1 (정사각형)', ratio_3_4: '3:4 (세로)', ratio_2_3: '2:3 (세로)', ratio_9_16: '9:16 (스토리)', ratio_9_21: '9:21 (길게)',
+                fit: '맞춤 모드', fit_cov: '✂️ 채우기', fit_con: '🖼️ 포함',
+                border_c: '테두리 색상', c_white: '⚪ 흰색', c_black: '⚫ 검은색', c_lgray: '🔘 밝은 회색', c_dgray: '🔘 어두운 회색', border_t: '테두리 두께: ', outer_b: '외부 테두리 포함?',
+                step3: '3. 코너 번호 설정', show_n: '번호 표시 (1, 2, 3...)', n_style: '번호 스타일', s_black: '⚫ 검은색 (흰 테두리)', s_white: '⚪ 흰색 (검은 테두리)', s_high: '🌟 강조 (검은 배경)',
+                n_pos: '번호 위치', p_tl: '↖️ 좌측 상단', p_tr: '↗️ 우측 상단', p_bl: '↙️ 좌측 하단', p_br: '↘️ 우측 하단',
+                step4: '4. 출력', btn_dl: '이미지 다운로드', btn_cp: '이미지 복사', prev_emp: '사진이 없습니다. 왼쪽에서 업로드하세요.',
+                alert_max: '최대 9장의 사진만 업로드할 수 있습니다!', copied: '✅ 복사 완료!', copy_fail: '복사할 수 없습니다. 다운로드를 이용하세요.',
+                theme_dark: '🌙 다크', theme_light: '☀️ 라이트'
+            },
+            'es': {
+                title: 'GD5GD', subhead: 'Combina tus fotos en una sin problemas',
+                step1: '1. Subir Fotos (2-9)', upload_text: 'Haz clic aquí o arrastra fotos',
+                step2: '2. Ajustes de Cuadrícula y Borde', layout: 'Diseño de Cuadrícula',
+                l_auto: '🤖 Auto Optimizar', l_1x2: '1x2 (Lado a lado)', l_2x1: '2x1 (Apilado)', l_1x3: '1x3 (Horizontal)', l_3x1: '3x1 (Vertical)', l_2x2: '2x2 (Cuadrícula)', l_2x3: '2x3 (Cuadrícula)', l_3x2: '3x2 (Cuadrícula)', l_3x3: '3x3 (Cuadrícula)',
+                ratio_label: 'Relación de aspecto: ', r_wide_lbl: '21:9 (Ancho)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (Largo)',
+                ratio_21_9: '21:9 (Ultra ancho)', ratio_16_9: '16:9 (Paisaje)', ratio_3_2: '3:2 (Clásico)', ratio_4_3: '4:3 (Estándar)', ratio_1_1: '1:1 (Cuadrado)', ratio_3_4: '3:4 (Retrato)', ratio_2_3: '2:3 (Retrato)', ratio_9_16: '9:16 (Historia)', ratio_9_21: '9:21 (Alto)',
+                fit: 'Modo de Ajuste', fit_cov: '✂️ Cubrir', fit_con: '🖼️ Contener',
+                border_c: 'Color del Borde', c_white: '⚪ Blanco', c_black: '⚫ Negro', c_lgray: '🔘 Gris Claro', c_dgray: '🔘 Gris Oscuro', border_t: 'Grosor del Borde: ', outer_b: '¿Incluir borde exterior?',
+                step3: '3. Números en Esquinas', show_n: 'Mostrar Números (1, 2, 3...)', n_style: 'Estilo de Número', s_black: '⚫ Negro (Borde Blanco)', s_white: '⚪ Blanco (Borde Negro)', s_high: '🌟 Resaltado',
+                n_pos: 'Posición', p_tl: '↖️ Arriba Izquierda', p_tr: '↗️ Arriba Derecha', p_bl: '↙️ Abajo Izquierda', p_br: '↘️ Abajo Derecha',
+                step4: '4. Salida', btn_dl: 'Descargar Imagen', btn_cp: 'Copiar Imagen', prev_emp: 'Sin fotos. Sube a la izquierda para previsualizar.',
+                alert_max: '¡Solo puedes subir hasta 9 fotos!', copied: '✅ ¡Copiado!', copy_fail: 'No se puede copiar. Usa descargar.',
+                theme_dark: '🌙 Oscuro', theme_light: '☀️ Claro'
+            },
+            'fr': {
+                title: 'GD5GD', subhead: 'Combinez vos photos en une seule, sans effort',
+                step1: '1. Télécharger (2-9)', upload_text: 'Cliquez ici ou glissez des photos',
+                step2: '2. Grille et Bordure', layout: 'Disposition',
+                l_auto: '🤖 Auto-optimisation', l_1x2: '1x2 (Côte à côte)', l_2x1: '2x1 (Empilé)', l_1x3: '1x3 (Horizontal)', l_3x1: '3x1 (Vertical)', l_2x2: '2x2 (Grille)', l_2x3: '2x3 (Grille)', l_3x2: '3x2 (Grille)', l_3x3: '3x3 (Grille)',
+                ratio_label: 'Ratio d\'aspect: ', r_wide_lbl: '21:9 (Large)', r_sq_lbl: '1:1', r_long_lbl: '9:21 (Long)',
+                ratio_21_9: '21:9 (Ultra large)', ratio_16_9: '16:9 (Paysage)', ratio_3_2: '3:2 (Classique)', ratio_4_3: '4:3 (Standard)', ratio_1_1: '1:1 (Carré)', ratio_3_4: '3:4 (Portrait)', ratio_2_3: '2:3 (Portrait)', ratio_9_16: '9:16 (Story)', ratio_9_21: '9:21 (Grand)',
+                fit: 'Mode d\'ajustement', fit_cov: '✂️ Remplir', fit_con: '🖼️ Contenir',
+                border_c: 'Couleur', c_white: '⚪ Blanc', c_black: '⚫ Noir', c_lgray: '🔘 Gris clair', c_dgray: '🔘 Gris foncé', border_t: 'Épaisseur: ', outer_b: 'Bordure externe?',
+                step3: '3. Numéros aux coins', show_n: 'Afficher les numéros', n_style: 'Style du numéro', s_black: '⚫ Noir (Contour blanc)', s_white: '⚪ Blanc (Contour noir)', s_high: '🌟 Mise en évidence',
+                n_pos: 'Position', p_tl: '↖️ Haut-Gauche', p_tr: '↗️ Haut-Droite', p_bl: '↙️ Bas-Gauche', p_br: '↘️ Bas-Droite',
+                step4: '4. Exporter', btn_dl: 'Télécharger', btn_cp: 'Copier', prev_emp: 'Aucune photo. Téléchargez pour prévisualiser.',
+                alert_max: 'Maximum 9 photos !', copied: '✅ Copié !', copy_fail: 'Impossible de copier. Utilisez le téléchargement.',
+                theme_dark: '🌙 Sombre', theme_light: '☀️ Clair'
+            }
+        };
+
+        // --- Core Application State ---
+        let imageList = []; 
+        let dragSource = null;
+        let currentLang = 'en';
+        let isDarkMode = false;
+
+        // 定義格仔嘅常用比例 (對應 i18n keys)
+        const aspectRatios = [
+            { key: "ratio_21_9", w: 21, h: 9 },
+            { key: "ratio_16_9", w: 16, h: 9 },
+            { key: "ratio_3_2", w: 3, h: 2 },
+            { key: "ratio_4_3", w: 4, h: 3 },
+            { key: "ratio_1_1", w: 1, h: 1 },
+            { key: "ratio_3_4", w: 3, h: 4 },
+            { key: "ratio_2_3", w: 2, h: 3 },
+            { key: "ratio_9_16", w: 9, h: 16 },
+            { key: "ratio_9_21", w: 9, h: 21 }
+        ];
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            changeLang(); // Set default texts based on English
+        });
+
+        // --- Features: Theme & Language ---
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            updateThemeButtonText();
+        }
+
+        function updateThemeButtonText() {
+            const themeSpan = document.querySelector('#theme-toggle span');
+            const targetKey = isDarkMode ? 'theme_light' : 'theme_dark';
+            themeSpan.setAttribute('data-i18n', targetKey);
+            themeSpan.innerText = i18n[currentLang][targetKey];
+        }
+
+        function changeLang() {
+            currentLang = document.getElementById('lang-select').value;
+            // Update all static i18n tags
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                let key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) {
+                    el.innerText = i18n[currentLang][key];
+                }
+            });
+            // Update Dynamic tags
+            updateRatioLabel();
+            updateThemeButtonText();
+        }
+
+        function updateRatioLabel() {
+            let val = parseInt(document.getElementById('ratio-slider').value);
+            let ratioKey = aspectRatios[val].key;
+            document.getElementById('ratio-val').innerText = i18n[currentLang][ratioKey];
+        }
+
+        // --- UI Listeners ---
+        document.getElementById('number-toggle').addEventListener('change', function() {
+            document.getElementById('number-settings').style.display = this.checked ? 'flex' : 'none';
+        });
+
+        const uploadBox = document.querySelector('.upload-box');
+        uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--primary)'; });
+        uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--upload-border)'; });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.style.borderColor = 'var(--upload-border)';
+            if(e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+        });
+
+        // --- Logic: File Handling & Dragging ---
+        function handleFiles(files) {
+            for (let file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                if (imageList.length >= 9) {
+                    alert(i18n[currentLang].alert_max);
+                    break;
+                }
+                let reader = new FileReader();
+                let imgId = 'img_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                reader.onload = (e) => {
+                    let img = new Image();
+                    img.onload = () => {
+                        imageList.push({ id: imgId, imgElement: img });
+                        renderThumbnails();
+                        updateCanvas();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            document.getElementById('file-input').value = '';
+        }
+
+        function renderThumbnails() {
+            const grid = document.getElementById('thumb-grid');
+            grid.innerHTML = '';
+            
+            imageList.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'thumb-item';
+                div.draggable = true;
+                div.dataset.id = item.id;
+                
+                let img = document.createElement('img');
+                img.src = item.imgElement.src;
+                div.appendChild(img);
+                
+                let del = document.createElement('button');
+                del.className = 'del-btn';
+                del.innerHTML = '✕';
+                del.onclick = (e) => {
+                    e.stopPropagation();
+                    imageList = imageList.filter(x => x.id !== item.id);
+                    renderThumbnails();
+                    updateCanvas();
+                };
+                div.appendChild(del);
+
+                div.addEventListener('dragstart', (e) => {
+                    dragSource = div;
+                    setTimeout(() => div.classList.add('dragging'), 0);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+                div.addEventListener('dragenter', (e) => { if (div !== dragSource) div.style.borderColor = 'var(--primary)'; });
+                div.addEventListener('dragleave', (e) => { div.style.borderColor = 'var(--thumb-border)'; });
+                
+                div.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    div.style.borderColor = 'var(--thumb-border)';
+                    if (dragSource && dragSource !== div) {
+                        let srcId = dragSource.dataset.id;
+                        let targetId = div.dataset.id;
+                        let srcIdx = imageList.findIndex(x => x.id === srcId);
+                        let targetIdx = imageList.findIndex(x => x.id === targetId);
+                        
+                        let temp = imageList[srcIdx];
+                        imageList[srcIdx] = imageList[targetIdx];
+                        imageList[targetIdx] = temp;
+                        
+                        renderThumbnails();
+                        updateCanvas();
+                    }
+                });
+                
+                div.addEventListener('dragend', () => {
+                    div.classList.remove('dragging');
+                    document.querySelectorAll('.thumb-item').forEach(el => el.style.borderColor = 'var(--thumb-border)');
+                    dragSource = null;
+                });
+
+                grid.appendChild(div);
+            });
+
+            const hasImages = imageList.length > 0;
+            document.getElementById('download-btn').disabled = !hasImages;
+            document.getElementById('copy-btn').disabled = !hasImages;
+        }
+
+        // --- Canvas Rendering ---
+        function getAutoGrid(count) {
+            if (count === 1) return { rows: 1, cols: 1 };
+            if (count === 2) return { rows: 1, cols: 2 }; 
+            if (count === 3) return { rows: 1, cols: 3 };
+            if (count === 4) return { rows: 2, cols: 2 };
+            if (count <= 6) return { rows: 2, cols: 3 };
+            return { rows: 3, cols: 3 }; 
+        }
+
+        function updateCanvas() {
+            const canvas = document.getElementById('main-canvas');
+            const ctx = canvas.getContext('2d');
+            const placeholder = document.getElementById('placeholder-text');
+
+            if (imageList.length === 0) {
+                canvas.style.display = 'none';
+                placeholder.style.display = 'flex';
+                return;
+            }
+
+            canvas.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            let gridType = document.getElementById('grid-select').value;
+            let fitMode = document.getElementById('fit-select').value;
+            let borderColor = document.getElementById('border-color').value;
+            let thickness = parseInt(document.getElementById('border-thickness').value);
+            let hasOuterBorder = document.getElementById('outer-border-toggle').checked;
+            let showNumber = document.getElementById('number-toggle').checked;
+            let numStyle = document.getElementById('number-style').value;
+            let numPos = document.getElementById('number-pos').value;
+
+            let rows, cols;
+            if (gridType === 'auto') {
+                let autoG = getAutoGrid(imageList.length);
+                rows = autoG.rows; cols = autoG.cols;
+            } else {
+                let parts = gridType.split('x');
+                rows = parseInt(parts[0]); cols = parseInt(parts[1]);
+            }
+
+            let ratioIndex = parseInt(document.getElementById('ratio-slider').value);
+            let ratioW = aspectRatios[ratioIndex].w;
+            let ratioH = aspectRatios[ratioIndex].h;
+
+            const baseSize = 1200;
+            let cellW, cellH;
+            if (ratioW >= ratioH) {
+                cellW = baseSize;
+                cellH = Math.round(baseSize * (ratioH / ratioW));
+            } else {
+                cellH = baseSize;
+                cellW = Math.round(baseSize * (ratioW / ratioH));
+            }
+
+            let outerSpacing = hasOuterBorder ? thickness : 0;
+            let totalW = (cols * cellW) + ((cols - 1) * thickness) + (outerSpacing * 2);
+            let totalH = (rows * cellH) + ((rows - 1) * thickness) + (outerSpacing * 2);
+
+            canvas.width = totalW;
+            canvas.height = totalH;
+
+            ctx.fillStyle = borderColor;
+            ctx.fillRect(0, 0, totalW, totalH);
+
+            for (let i = 0; i < rows * cols; i++) {
+                let r = Math.floor(i / cols);
+                let c = i % cols;
+
+                let dx = outerSpacing + (c * (cellW + thickness));
+                let dy = outerSpacing + (r * (cellH + thickness));
+
+                if (i < imageList.length) {
+                    let img = imageList[i].imgElement;
+                    
+                    if (fitMode === 'cover') {
+                        let imgRatio = img.width / img.height;
+                        let cellRatio = cellW / cellH;
+                        let sx, sy, sWidth, sHeight;
+
+                        if (imgRatio > cellRatio) {
+                            sHeight = img.height;
+                            sWidth = img.height * cellRatio;
+                            sx = (img.width - sWidth) / 2;
+                            sy = 0;
+                        } else {
+                            sWidth = img.width;
+                            sHeight = img.width / cellRatio;
+                            sx = 0;
+                            sy = (img.height - sHeight) / 2;
+                        }
+                        ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, cellW, cellH);
+                    } else {
+                        ctx.fillStyle = borderColor;
+                        ctx.fillRect(dx, dy, cellW, cellH);
+
+                        let imgRatio = img.width / img.height;
+                        let cellRatio = cellW / cellH;
+                        let renderW = cellW;
+                        let renderH = cellH;
+                        let offsetX = 0;
+                        let offsetY = 0;
+
+                        if (imgRatio > cellRatio) {
+                            renderH = cellW / imgRatio;
+                            offsetY = (cellH - renderH) / 2;
+                        } else {
+                            renderW = cellH * imgRatio;
+                            offsetX = (cellW - renderW) / 2;
+                        }
+                        ctx.drawImage(img, dx + offsetX, dy + offsetY, renderW, renderH);
+                    }
+
+                    if (showNumber) {
+                        ctx.save();
+                        let numStr = (i + 1).toString();
+                        let fontSize = 56;
+                        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                        
+                        let textW = ctx.measureText(numStr).width;
+                        let padding = 45;
+                        let nx = dx, ny = dy;
+
+                        if (numPos === 'tl') { nx += padding + textW/2; ny += padding + fontSize*0.8; }
+                        else if (numPos === 'tr') { nx += cellW - padding - textW/2; ny += padding + fontSize*0.8; }
+                        else if (numPos === 'bl') { nx += padding + textW/2; ny += cellH - padding; }
+                        else if (numPos === 'br') { nx += cellW - padding - textW/2; ny += cellH - padding; }
+
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'alphabetic';
+
+                        if (numStyle === 'highlight') {
+                            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+                            ctx.beginPath();
+                            ctx.arc(nx, ny - fontSize/3, fontSize * 0.8, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillText(numStr, nx, ny);
+                        } else {
+                            ctx.fillStyle = numStyle === 'black' ? '#000000' : '#ffffff';
+                            ctx.strokeStyle = numStyle === 'black' ? '#ffffff' : '#000000';
+                            ctx.lineWidth = 6;
+                            ctx.lineJoin = 'round';
+                            ctx.strokeText(numStr, nx, ny);
+                            ctx.fillText(numStr, nx, ny);
+                        }
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // --- Output Functions ---
+        function downloadImage() {
+            const canvas = document.getElementById('main-canvas');
+            let link = document.createElement('a');
+            link.download = 'GD5GD_' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        async function copyToClipboard() {
+            const canvas = document.getElementById('main-canvas');
+            const copyBtn = document.getElementById('copy-btn');
+            const span = copyBtn.querySelector('span');
+            
+            try {
+                canvas.toBlob(async (blob) => {
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        
+                        span.innerText = i18n[currentLang].copied;
+                        copyBtn.style.background = '#047857';
+                    } catch (e) {
+                        alert(i18n[currentLang].copy_fail);
+                    }
+                    setTimeout(() => {
+                        span.innerText = i18n[currentLang].btn_cp;
+                        copyBtn.style.background = '';
+                    }, 2000);
+                }, 'image/png');
+            } catch (err) {
+                alert(i18n[currentLang].copy_fail);
+            }
+        }
+    </script>
+</body>
+</html>
