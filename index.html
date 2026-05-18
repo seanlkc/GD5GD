@@ -56,7 +56,6 @@
         header h1 { margin: 0 0 5px 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: var(--text); }
         header p { margin: 0; color: var(--text-muted); font-size: 15px; }
 
-        .top-left-bar { position: absolute; left: 0; top: 0; display: flex; align-items: center; }
         .top-right-bar { position: absolute; right: 0; top: 0; display: flex; gap: 10px; align-items: center; }
         
         .top-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; outline: none; }
@@ -67,7 +66,6 @@
 
         @media (max-width: 768px) { 
             .header-container { margin-bottom: 20px; padding: 0; }
-            .top-left-bar { position: absolute; left: 0; top: -5px; }
             .top-right-bar { position: absolute; right: 0; top: -5px; } 
             header h1 { font-size: 24px; margin-top: 40px; }
         }
@@ -119,12 +117,6 @@
 <body>
 
     <div class="header-container">
-        <div class="top-left-bar">
-            <button id="theme-toggle" class="top-btn icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-                <span id="theme-icon">🌙</span>
-            </button>
-        </div>
-
         <header>
             <h1 data-i18n="title">GD5GD</h1>
             <p data-i18n="subhead">Combine your photos into one seamlessly</p>
@@ -140,6 +132,9 @@
                 <option value="es">Español</option>
                 <option value="fr">Français</option>
             </select>
+            <button id="theme-toggle" class="top-btn icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
         </div>
     </div>
 
