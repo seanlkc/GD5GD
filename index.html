@@ -393,6 +393,12 @@
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             changeLang(); // Set default texts based on English
+            
+            // 偵測是否為 iOS 設備 (iPhone/iPad)，如果是則隱藏複製按鈕 (保留 Android 複製特權)
+            const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS) {
+                document.getElementById('copy-btn').style.display = 'none';
+            }
         });
 
         // --- Features: Theme & Language ---
