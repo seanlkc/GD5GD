@@ -22,7 +22,6 @@
             --thumb-bg: #e5e7eb;
             --thumb-border: transparent;
             --toggle-bg: #f9fafb;
-            --canvas-bg: #f3f4f6;
         }
 
         /* Dark Mode Variables */
@@ -41,7 +40,6 @@
             --thumb-bg: #374151;
             --thumb-border: #4b5563;
             --toggle-bg: #111827;
-            --canvas-bg: #111827;
         }
 
         /* Smooth Theme Transitions */
@@ -53,18 +51,25 @@
         body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
         /* Header & Top Bar Layout */
-        .header-container { position: relative; width: 100%; max-width: 1200px; text-align: center; margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .header-container { position: relative; width: 100%; max-width: 1200px; text-align: center; margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 50px; }
         header { margin: 0; }
         header h1 { margin: 0 0 5px 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; color: var(--text); }
         header p { margin: 0; color: var(--text-muted); font-size: 15px; }
 
-        .top-bar { position: absolute; right: 0; top: 0; display: flex; gap: 10px; align-items: center; }
+        .top-left-bar { position: absolute; left: 0; top: 0; display: flex; align-items: center; }
+        .top-right-bar { position: absolute; right: 0; top: 0; display: flex; gap: 10px; align-items: center; }
+        
         .top-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; outline: none; }
         .top-btn:hover { border-color: var(--primary); }
         
+        .icon-btn { padding: 6px; font-size: 20px; width: 40px; height: 40px; justify-content: center; border-radius: 50%; background: transparent; border: 1px solid transparent; transition: transform 0.2s; }
+        .icon-btn:hover { background: var(--panel-bg); border-color: var(--border-color); transform: scale(1.05); }
+
         @media (max-width: 768px) { 
-            .header-container { margin-bottom: 20px; }
-            .top-bar { position: relative; right: auto; top: auto; justify-content: center; margin-top: 15px; } 
+            .header-container { margin-bottom: 20px; padding: 0; }
+            .top-left-bar { position: absolute; left: 0; top: -5px; }
+            .top-right-bar { position: absolute; right: 0; top: -5px; } 
+            header h1 { font-size: 24px; margin-top: 40px; }
         }
 
         .container { display: flex; flex-direction: row; gap: 20px; max-width: 1200px; width: 100%; align-items: flex-start; }
@@ -105,8 +110,8 @@
 
         /* 右邊即時預覽區 */
         .preview-area { flex: 1.8; background: var(--panel-bg); padding: 24px; border-radius: var(--border-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 500px; width: 100%; position: relative; }
-        .preview-container { max-width: 100%; max-height: 75vh; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; background: var(--canvas-bg); display: flex; align-items: center; justify-content: center; }
-        canvas { max-width: 100%; max-height: 75vh; object-fit: contain; display: block; }
+        .preview-container { max-width: 100%; max-height: 75vh; display: flex; align-items: center; justify-content: center; }
+        canvas { max-width: 100%; max-height: 75vh; object-fit: contain; display: block; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.15); border-radius: 4px; }
         .empty-placeholder { color: var(--text-muted); text-align: center; font-size: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .empty-placeholder span.icon { font-size: 40px; }
     </style>
@@ -114,12 +119,18 @@
 <body>
 
     <div class="header-container">
+        <div class="top-left-bar">
+            <button id="theme-toggle" class="top-btn icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+        </div>
+
         <header>
             <h1 data-i18n="title">GD5GD</h1>
             <p data-i18n="subhead">Combine your photos into one seamlessly</p>
         </header>
         
-        <div class="top-bar">
+        <div class="top-right-bar">
             <select id="lang-select" class="top-btn" onchange="changeLang()">
                 <option value="en">English</option>
                 <option value="zh-hk">繁體中文</option>
@@ -400,10 +411,8 @@
         }
 
         function updateThemeButtonText() {
-            const themeSpan = document.querySelector('#theme-toggle span');
-            const targetKey = isDarkMode ? 'theme_light' : 'theme_dark';
-            themeSpan.setAttribute('data-i18n', targetKey);
-            themeSpan.innerText = i18n[currentLang][targetKey];
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.innerText = isDarkMode ? '☀️' : '🌙';
         }
 
         function changeLang() {
